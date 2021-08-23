@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS content.movies
     PRIMARY KEY (id)
 );
 
+CREATE INDEX movie_director_idx ON content.movies(director); 
+CREATE INDEX movie_genre_idx ON content.movies(genre); 
+
+
 CREATE TABLE IF NOT EXISTS content.writers
 (
     id uuid,

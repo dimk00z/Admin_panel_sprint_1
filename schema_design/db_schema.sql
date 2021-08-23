@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS content.movie_actors
 (
     movie_id uuid NOT NULL,
     actor_id uuid NOT NULL,
+    CONSTRAINT "PK" PRIMARY KEY (movie_id, actor_id),
     CONSTRAINT movie_id FOREIGN KEY (movie_id)
         REFERENCES content.movies (id) MATCH SIMPLE
         ON UPDATE CASCADE
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS content.movie_actors
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
+
 
 -- TODO Remove sqlite code
 

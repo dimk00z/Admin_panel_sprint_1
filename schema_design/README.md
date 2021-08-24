@@ -19,5 +19,6 @@
 В соответсвии с заданием описать схему схему базы данных PostgreSQL на [основе данной базы sqlite](https://code.s3.yandex.net/middle-python/learning-materials/db.sqlite) подготовил скпирт [db_schema.sql](https://github.com/dimk00z/Admin_panel_sprint_1/blob/master/schema_design/db_schema.sql).
 
 В искомой базе схеме содержатся:
-5 таблиц film_work, genre, person, genre_film_work, person_film_work;
-2 индекса genre_film_work, person_film_work
+
+- 5 таблиц film_work, genre, person, genre_film_work, person_film_work;
+- 2 индекса genre_film_work, person_film_work

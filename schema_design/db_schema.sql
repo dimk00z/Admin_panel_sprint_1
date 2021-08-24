@@ -3,87 +3,81 @@
 
 -- Create schema for current content
 CREATE SCHEMA IF NOT EXISTS content;
-CREATE TABLE IF NOT EXISTS content.movies
+
+-- Create films table
+CREATE TABLE IF NOT EXISTS content.film_work
 (
     id uuid,
-    genre character varying(50),
-    director character varying(100) NOT NULL,
-    writer character varying(100) NOT NULL,
-    title character varying(250)  NOT NULL,
-    plot text,
-    imdb_rating numeric,
-    writers text,
+    title character varying(250) NOT NULL,
+    description text,
+    creation_date date,
+    certificate text,
+    file_path character varying(300),
+    rating numeric,
+    type character varying(30) NOT NULL,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
     PRIMARY KEY (id)
 );
 
-CREATE INDEX movie_director_idx ON content.movies(director); 
-CREATE INDEX movie_genre_idx ON content.movies(genre); 
-
-
-CREATE TABLE IF NOT EXISTS content.writers
+-- Create genres table
+CREATE TABLE IF NOT EXISTS content.genre
 (
     id uuid,
     name character varying(100) NOT NULL,
+    description text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
     PRIMARY KEY (id)
 );
-
-
-CREATE TABLE IF NOT EXISTS content.rating_agency
+-- Create table for actors
+CREATE TABLE IF NOT EXISTS content.person
 (
     id uuid,
-    name character varying(150) NOT NULL,
+    full_name character varying(200) NOT NULL,
+    birth_date date,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
     PRIMARY KEY (id)
 );
-
-CREATE TABLE IF NOT EXISTS content.actors
+-- Create table for many-to-many relatiomship for films and genres
+CREATE TABLE IF NOT EXISTS content.genre_film_work
 (
     id uuid,
-    name character varying(150) NOT NULL,
-    PRIMARY KEY (id)
-);
-
-CREATE TABLE IF NOT EXISTS content.movie_actors
-(
-    movie_id uuid NOT NULL,
-    actor_id uuid NOT NULL,
-    CONSTRAINT "PK" PRIMARY KEY (movie_id, actor_id),
-    CONSTRAINT movie_id FOREIGN KEY (movie_id)
-        REFERENCES content.movies (id) MATCH SIMPLE
+    film_work_id uuid NOT NULL,
+    genre_id uuid NOT NULL,
+    created_at timestamp with time zone,
+    PRIMARY KEY (id),
+    CONSTRAINT film_work_id FOREIGN KEY (film_work_id)
+        REFERENCES content.film_work (id) MATCH SIMPLE
         ON UPDATE CASCADE
         ON DELETE CASCADE,
-    CONSTRAINT actor_id FOREIGN KEY (actor_id)
-        REFERENCES content.actors (id) MATCH SIMPLE
+    CONSTRAINT genre_id FOREIGN KEY (genre_id)
+        REFERENCES content.genre (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+-- Create table for many-to-many relatiomship for films and actors
+CREATE TABLE IF NOT EXISTS content.person_film_work
+(
+    id uuid,
+    film_work_id uuid NOT NULL,
+    person_id uuid NOT NULL,
+    role character varying(150),
+    created_at timestamp with time zone,
+    PRIMARY KEY (id),
+    UNIQUE (film_work_id, person_id),
+    CONSTRAINT "FK_film_work_id" FOREIGN KEY (film_work_id)
+        REFERENCES content.film_work (id) MATCH SIMPLE
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT "FK_person_id" FOREIGN KEY (person_id)
+        REFERENCES content.person (id) MATCH SIMPLE
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
 
-
--- TODO Remove sqlite code
-
--- from sql lite
--- CREATE TABLE movies (
---     -- id text primary key,
---     -- genre text,
---     -- director text,
---     -- writer text,
---     -- title text,
---     -- plot text,
---     -- ratings text,
---     -- imdb_rating text, 
---     writers text
--- );
-
--- CREATE TABLE writers(
---     id uuid PRIMARY KEY,
---     name text
--- );
-
--- CREATE TABLE rating_agency(
---     id uuid PRIMARY KEY,
---     name text
--- );
-
--- CREATE TABLE actors(
---     id uuid PRIMARY KEY,
---     name text
--- );
+-- Create indexes
+CREATE UNIQUE INDEX film_work_genre ON content.genre_film_work (film_work_id, genre_id);
+CREATE UNIQUE INDEX film_work_person_role ON content.person_film_work (film_work_id, person_id, role);

@@ -29,7 +29,7 @@ class Person:
 
 
 @dataclass
-class Film_Work_Peson:
+class Film_Work_Person:
     id_film: uuid.UUID
     id_person: uuid.UUID
     old_id_film: str

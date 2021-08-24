@@ -16,20 +16,20 @@ class Film_Work:
 @dataclass
 class Genre:
     name: str
-    created_at: datetime
+    created_at: datetime = field(default_factory=datetime.now)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
 
 @dataclass
 class Person:
-    name: str
+    full_name: str
     old_id: str
-    created_at: datetime
+    created_at: datetime = field(default_factory=datetime.now)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
 
 @dataclass
-class Film_Work_Person:
+class FilmWorkPerson:
     id_film: uuid.UUID
     id_person: uuid.UUID
     old_id_film: str
@@ -37,7 +37,7 @@ class Film_Work_Person:
 
 
 @dataclass
-class Film_Work_Genre:
+class FilmWorkGenre:
     id_film: uuid.UUID
     id_genre: uuid.UUID
     id: uuid.UUID = field(default_factory=uuid.uuid4)

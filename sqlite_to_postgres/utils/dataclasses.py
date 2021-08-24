@@ -7,10 +7,10 @@ import uuid
 class Film_Work:
     title: str
     description: str
-    created_at: datetime
     old_id: str
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     rating: float = field(default=0.0)
+    created_at: datetime = field(default_factory=datetime.now)
 
 
 @dataclass

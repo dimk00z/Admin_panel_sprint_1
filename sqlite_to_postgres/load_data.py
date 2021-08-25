@@ -4,18 +4,23 @@ from dacite import from_dict
 from datetime import datetime
 from dateutil import parser
 import uuid
+
 from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre
 from utils.list_utils import group_elements
 from utils.env_load import load_params
+
 from dataclasses import dataclass
 
-from typing import List
+from typing import List, Tuple, Dict
 
 import sqlite3
 
 import psycopg2
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
+
+MAX_OPERATION_PER_PAGE = 500
+SCHEMA = 'content'
 
 logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.DEBUG)
@@ -43,30 +48,19 @@ class SQLiteLoader:
                 current_table.append(row)
             self.sqlite_data[table_name] = current_table
 
-    def _get_or_create_person(self, name: str, persons: dict) -> Person:
-        if name in persons:
-            return persons[name]
-        person: Person = Person(full_name=name)
-        persons[name] = person
-        return person
+    def _get_table_data(self,
+                        table_name: str,
+                        data_class_name: dataclass) -> List[dataclass]:
 
-    def _add_persons(self, table_name: str,
-                     typed_persons: dict,
-                     persons: dict) -> None:
-        for person_old_id, name in self.sqlite_data[table_name][1:]:
-            person: Person = Person(full_name=name)
-            typed_persons[person_old_id] = person
-            persons[name] = person
+        keys: dict = {key: {'position': position} for
+                      position, key in enumerate(self.sqlite_data[table_name][0])}
+        current_table_data: List[dataclass] = []
 
-    def _get_table_data(self, table_name: str, data_class_name: dataclass):
-        keys = {key: {'position': position} for
-                position, key in enumerate(self.sqlite_data[table_name][0])}
-        current_table_data = []
         for key in keys:
             keys[key]['type'] = data_class_name.__dataclass_fields__[key].type
 
         for row in self.sqlite_data[table_name][1:]:
-            current_record = {
+            current_record: dict = {
                 key: row[keys[key]['position']]
                 for key in keys if row[keys[key]['position']]
             }
@@ -77,13 +71,17 @@ class SQLiteLoader:
                     current_record[key] = float(current_record[key])
                 elif keys[key]['type'] == uuid.UUID:
                     current_record[key] = uuid.UUID(current_record[key])
+                elif keys[key]['type'] == str:
+                    current_record[key] = current_record[key].replace("'", "''")
             current_table_data.append(
-                from_dict(data_class=data_class_name, data=current_record))
+                from_dict(data_class=data_class_name,
+                          data=current_record))
+
         return current_table_data
 
-    def _sanitize_data(self) -> dict:
-        sanitized_data: dict = {}
-        classes_per_table = {
+    def _sanitize_data(self) -> Dict[str, List[dataclass]]:
+        sanitized_data: Dict[str:] = {}
+        classes_per_table: Dict[str:dataclass] = {
             'film_work': FilmWork,
             'genre': Genre,
             'person': Person,
@@ -98,74 +96,64 @@ class SQLiteLoader:
 
         return sanitized_data
 
-    def load_movies(self) -> dict:
+    def load_movies(self) -> Dict[str, List[dataclass]]:
         self._load_all_sqlite_data()
-        data = self._sanitize_data()
+        data: Dict[str:List[dataclass]] = self._sanitize_data()
         logger.info('Data loaded from sqlite db')
         return data
 
-    class PostgresSaver:
-        def __init__(self, pg_conn: _connection):
-            self.cursor = pg_conn.cursor()
 
-        def _save_data_to_table(self, table_name: str,
-                                rows: list,
-                                schema: str = 'content',
-                                max_operations: int = 500):
-            rows_names: str = ', '.join(rows[0])
-            grouped_rows = group_elements(rows[1:], max_operations)
-            for page_number, rows in enumerate(grouped_rows):
-                sql_template = f"INSERT INTO {schema}.{table_name} ({rows_names})\nVALUES "
-                data_str = ', \n'.join(map(lambda y: f"({y})",
-                                           [','.join(map(lambda x: "'{}'".format(x.replace("'", "''")), map(str, row)))
-                                            for row in rows
-                                            ])
-                                       )
+class PostgresSaver:
+    def __init__(self, pg_conn: _connection):
+        self.cursor = pg_conn.cursor()
 
-                # excluded_str = ', '.join([f'{name}=EXCLUDED.{name}' for name in rows[0]])
-                # on_conflict_str = f'ON CONFLICT (id) DO UPDATE SET {excluded_str};'
-                on_conflict_str = 'ON CONFLICT (id) DO NOTHING;'
-                sql_template = '\n'.join((sql_template, data_str, on_conflict_str))
-                self.cursor.execute(sql_template)
-                rows_count = len(rows)
-                logger.info(f'Loaded page #{page_number}:{rows_count} rows for table:{table_name}')
+    def _save_data_to_table(self, table_name: str,
+                            table_data: List[dataclass]) -> None:
+        logger.debug(table_name)
+        dataclass_fields: Tuple[str] = tuple(table_data[0].__dataclass_fields__.keys())
+        rows_names: str = ', '.join(dataclass_fields)
 
-        def save_all_data(self, data: dict, tables: List[str]):
-            for table_name in tables:
-                rows: list = []
-                fields_names = list(key for key in data[table_name][0].__dataclass_fields__)
-                rows.append(fields_names)
-                for row_data in data[table_name]:
-                    row = []
-                    for field_name in fields_names:
-                        row.append(getattr(row_data, field_name))
-                    rows.append(row)
-                self._save_data_to_table(table_name=table_name,
-                                         rows=rows)
-                break
+        grouped_table_data = group_elements(table_data[1:],
+                                            MAX_OPERATION_PER_PAGE)
+        for page_number, rows in enumerate(grouped_table_data):
+
+            rows_for_script: List[str] = []
+            for data_class in rows:
+                row: List[str] = []
+                for field_name in dataclass_fields:
+                    row.append("'{}'".format(
+                        str(getattr(data_class, field_name))) if getattr(data_class,
+                                                                         field_name) else "NULL")
+                rows_for_script.append('({})'.format(', '.join(row)))
+
+            sql_template: str = '\n'.join(
+                (f"INSERT INTO {SCHEMA}.{table_name} ({rows_names})\nVALUES ",
+                 ', \n'.join(rows_for_script),
+                 'ON CONFLICT (id) DO NOTHING;'))
+            self.cursor.execute(sql_template)
+            rows_count = len(rows)
+            logger.info(f'Loaded page #{page_number + 1}:{rows_count} rows for table:{table_name}')
+
+    def save_all_data(self, data: dict) -> None:
+        for table_name, table_data in data.items():
+            self._save_data_to_table(
+                table_name=table_name,
+                table_data=table_data)
 
 
-def load_from_sqlite(connection: sqlite3.Connection, pg_conn: _connection):
+def load_from_sqlite(connection: sqlite3.Connection,
+                     pg_conn: _connection) -> None:
     """Основной метод загрузки данных из SQLite в Postgres"""
-    sqlite_loader = SQLiteLoader(connection)
-    data = sqlite_loader.load_movies()
-    for some, value in data.items():
-        print(some, value[0])
+    sqlite_loader: SQLiteLoader = SQLiteLoader(connection)
+    data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
 
-    # postgres_saver = PostgresSaver(pg_conn)
-    # tables = [
-    #     'film_work',
-    #     'genre',
-    #     'person',
-    #     'genre_film_work',
-    #     'person_film_work',
-    # ]
-    # postgres_saver.save_all_data(data, tables)
+    postgres_saver: PostgresSaver = PostgresSaver(pg_conn)
+    postgres_saver.save_all_data(data)
 
 
 def main():
     try:
-        script_params = load_params(
+        script_params: Dict[str] = load_params(
             required_params=[
                 "dbname",
                 "user",
@@ -174,24 +162,29 @@ def main():
                 "port",
                 "db_sqlite_file",
             ])
-        # logger.info(script_params)
-        dsl = {'dbname': script_params['dbname'],
-               'user': script_params['user'],
-               'password': script_params['password'],
-               'host': script_params['host'],
-               'port': script_params['port'],
-               'options': '-c search_path=content'}
-        sqlite_file = script_params['db_sqlite_file']
+        logger.debug(script_params)
+        dsl: Dict[str:str] = {
+            'dbname': script_params['dbname'],
+            'user': script_params['user'],
+            'password': script_params['password'],
+            'host': script_params['host'],
+            'port': script_params['port'],
+            'options': '-c search_path=content'
+        }
+        sqlite_file: str = script_params['db_sqlite_file']
         if not os.path.isfile(sqlite_file):
-            raise sqlite3.OperationalError
+            raise OSError
         with sqlite3.connect(script_params['db_sqlite_file']) as sqlite_conn:
             with psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
                 load_from_sqlite(sqlite_conn, pg_conn)
 
+    except OSError:
+        logger.error('Have a problem with sqlite file')
+
     except sqlite3.OperationalError as ex:
         logger.error(ex)
 
-    except psycopg2.OperationalError as e:
+    except (psycopg2.OperationalError, psycopg2.errors) as e:
         logger.error(e)
 
 

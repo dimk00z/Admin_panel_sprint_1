@@ -10,6 +10,7 @@ class FilmWork:
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     rating: float = field(default=0.0)
     created_at: datetime = field(default_factory=datetime.now)
+    type: str = field(default="movie")
 
 
 @dataclass

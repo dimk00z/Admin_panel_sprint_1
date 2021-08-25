@@ -29,14 +29,14 @@ class Person:
 
 @dataclass
 class FilmWorkPerson:
-    id_film: uuid.UUID
-    id_person: uuid.UUID
+    film_work_id: uuid.UUID
+    person_id: uuid.UUID
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     created_at: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
 class FilmWorkGenre:
-    id_film: uuid.UUID
-    id_genre: uuid.UUID
+    film_work_id: uuid.UUID
+    genre_id: uuid.UUID
     id: uuid.UUID = field(default_factory=uuid.uuid4)

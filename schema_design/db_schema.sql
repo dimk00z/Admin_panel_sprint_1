@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS content.genre_film_work
     genre_id uuid NOT NULL,
     created_at timestamp with time zone,
     PRIMARY KEY (id),
+    UNIQUE (film_work_id, genre_id),
     CONSTRAINT film_work_id FOREIGN KEY (film_work_id)
         REFERENCES content.film_work (id) MATCH SIMPLE
         ON UPDATE CASCADE

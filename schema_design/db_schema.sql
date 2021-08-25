@@ -48,15 +48,7 @@ CREATE TABLE IF NOT EXISTS content.genre_film_work
     genre_id     uuid NOT NULL,
     created_at   timestamp with time zone,
     PRIMARY KEY (id),
-    UNIQUE (film_work_id, genre_id),
-    CONSTRAINT film_work_id FOREIGN KEY (film_work_id)
-        REFERENCES content.film_work (id) MATCH SIMPLE
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
-    CONSTRAINT genre_id FOREIGN KEY (genre_id)
-        REFERENCES content.genre (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    UNIQUE (film_work_id, genre_id)
 );
 
 -- Create table for many-to-many relationship for films and actors
@@ -68,15 +60,7 @@ CREATE TABLE IF NOT EXISTS content.person_film_work
     role         character varying(150),
     created_at   timestamp with time zone,
     PRIMARY KEY (id),
-    UNIQUE (film_work_id, person_id),
-    CONSTRAINT "FK_film_work_id" FOREIGN KEY (film_work_id)
-        REFERENCES content.film_work (id) MATCH SIMPLE
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
-    CONSTRAINT "FK_person_id" FOREIGN KEY (person_id)
-        REFERENCES content.person (id) MATCH SIMPLE
-        ON UPDATE CASCADE
-        ON DELETE CASCADE
+    UNIQUE (film_work_id, person_id, role)
 );
 
 -- Create indexes

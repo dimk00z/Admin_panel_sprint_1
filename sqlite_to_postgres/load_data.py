@@ -5,7 +5,7 @@ from datetime import datetime
 from dateutil import parser
 import uuid
 
-from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre
+from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre,classes_per_table
 from utils.list_utils import group_elements
 from utils.env_load import load_params
 
@@ -81,13 +81,6 @@ class SQLiteLoader:
 
     def _sanitize_data(self) -> Dict[str, List[dataclass]]:
         sanitized_data: Dict[str:] = {}
-        classes_per_table: Dict[str:dataclass] = {
-            'film_work': FilmWork,
-            'genre': Genre,
-            'person': Person,
-            'genre_film_work': FilmWorkGenre,
-            'person_film_work': FilmWorkPerson,
-        }
         for table_name, data_class_name in classes_per_table.items():
             logger.debug(table_name)
             sanitized_data[table_name] = self._get_table_data(

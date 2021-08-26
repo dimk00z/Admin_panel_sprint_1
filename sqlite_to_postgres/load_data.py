@@ -5,7 +5,8 @@ from datetime import datetime
 from dateutil import parser
 import uuid
 
-from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre,classes_per_table
+from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre, \
+    classes_per_table
 from utils.list_utils import group_elements
 from utils.env_load import load_params
 
@@ -19,7 +20,6 @@ import psycopg2
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
 
-MAX_OPERATION_PER_PAGE = 500
 SCHEMA = 'content'
 
 logger = logging.getLogger(__file__)
@@ -82,7 +82,7 @@ class SQLiteLoader:
     def _sanitize_data(self) -> Dict[str, List[dataclass]]:
         sanitized_data: Dict[str:] = {}
         for table_name, data_class_name in classes_per_table.items():
-            logger.debug(table_name)
+            logger.debug(f'Loading from table: {table_name}')
             sanitized_data[table_name] = self._get_table_data(
                 table_name=table_name, data_class_name=data_class_name
             )
@@ -97,17 +97,18 @@ class SQLiteLoader:
 
 
 class PostgresSaver:
-    def __init__(self, pg_conn: _connection):
+    def __init__(self, pg_conn: _connection, page_size: int):
         self.cursor = pg_conn.cursor()
+        self.page_size = page_size
 
     def _save_data_to_table(self, table_name: str,
                             table_data: List[dataclass]) -> None:
-        logger.debug(table_name)
+        logger.debug(f'Uploading into table: {table_name}')
         dataclass_fields: Tuple[str] = tuple(table_data[0].__dataclass_fields__.keys())
         rows_names: str = ', '.join(dataclass_fields)
 
         grouped_table_data = group_elements(table_data[1:],
-                                            MAX_OPERATION_PER_PAGE)
+                                            self.page_size)
         for page_number, rows in enumerate(grouped_table_data):
 
             rows_for_script: List[str] = []
@@ -135,12 +136,13 @@ class PostgresSaver:
 
 
 def load_from_sqlite(connection: sqlite3.Connection,
-                     pg_conn: _connection) -> None:
+                     pg_conn: _connection,
+                     page_size: int = 500) -> None:
     """Основной метод загрузки данных из SQLite в Postgres"""
     sqlite_loader: SQLiteLoader = SQLiteLoader(connection)
     data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
 
-    postgres_saver: PostgresSaver = PostgresSaver(pg_conn)
+    postgres_saver: PostgresSaver = PostgresSaver(pg_conn, page_size)
     postgres_saver.save_all_data(data)
 
 
@@ -154,8 +156,9 @@ def main():
                 "host",
                 "port",
                 "db_sqlite_file",
+                "page_size",
             ])
-        logger.debug(script_params)
+        logger.debug('Loaded parameters: {}'.format(tuple(script_params.keys())))
         dsl: Dict[str:str] = {
             'dbname': script_params['dbname'],
             'user': script_params['user'],
@@ -169,7 +172,7 @@ def main():
             raise OSError
         with sqlite3.connect(script_params['db_sqlite_file']) as sqlite_conn:
             with psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
-                load_from_sqlite(sqlite_conn, pg_conn)
+                load_from_sqlite(sqlite_conn, pg_conn, int(script_params['page_size']))
 
     except OSError:
         logger.error('Have a problem with sqlite file')

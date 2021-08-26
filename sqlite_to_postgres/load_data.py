@@ -84,7 +84,7 @@ class SQLiteLoader:
     def _sanitize_data(self) -> Dict[str, List[dataclass]]:
         sanitized_data: Dict[str:] = {}
         for table_name, data_class_name in self.classes_per_table.items():
-            logger.debug(f'Loading from table: {table_name}')
+            logger.info(f'Loading from table: {table_name}')
             sanitized_data[table_name] = self._sanitize_table_data(
                 table_name=table_name, data_class_name=data_class_name
             )
@@ -106,7 +106,7 @@ class PostgresSaver:
 
     def _save_data_to_table(self, table_name: str,
                             table_data: List[dataclass]) -> None:
-        logger.debug(f'Uploading into table: {table_name}')
+        logger.info(f'Uploading into table: {table_name}')
         dataclass_fields: Tuple[str] = tuple(table_data[0].__dataclass_fields__.keys())
         rows_names: str = ', '.join(dataclass_fields)
 
@@ -150,7 +150,7 @@ def main():
                 'db_sqlite_file',
                 'page_size',
             ])
-        logger.debug('Loaded parameters: {}'.format(tuple(script_params.keys())))
+        logger.info('Loaded parameters: {}'.format(tuple(script_params.keys())))
         dsl: Dict[str:str] = {
             'dbname': script_params['dbname'],
             'user': script_params['user'],

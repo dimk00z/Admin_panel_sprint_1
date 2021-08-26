@@ -69,28 +69,28 @@ page_size=1000
 
 ```
 python load_data.py
-DEBUG:load_data.py:Loaded parameters: ('dbname', 'user', 'password', 'host', 'port', 'db_sqlite_file', 'page_size')
-DEBUG:load_data.py:Loading from table: film_work
-DEBUG:load_data.py:Loading from table: genre
-DEBUG:load_data.py:Loading from table: person
-DEBUG:load_data.py:Loading from table: genre_film_work
-DEBUG:load_data.py:Loading from table: person_film_work
+INFO:load_data.py:Loaded parameters: ('dbname', 'user', 'password', 'host', 'port', 'db_sqlite_file', 'page_size')
+INFO:load_data.py:Loading from table: film_work
+INFO:load_data.py:Loading from table: genre
+INFO:load_data.py:Loading from table: person
+INFO:load_data.py:Loading from table: genre_film_work
+INFO:load_data.py:Loading from table: person_film_work
 INFO:load_data.py:Data loaded from sqlite db
-DEBUG:load_data.py:Uploading into table: film_work
+INFO:load_data.py:Uploading into table: film_work
 INFO:load_data.py:Loaded page #1:998 rows for table:film_work
-DEBUG:load_data.py:Uploading into table: genre
+INFO:load_data.py:Uploading into table: genre
 INFO:load_data.py:Loaded page #1:25 rows for table:genre
-DEBUG:load_data.py:Uploading into table: person
+INFO:load_data.py:Uploading into table: person
 INFO:load_data.py:Loaded page #1:1000 rows for table:person
 INFO:load_data.py:Loaded page #2:1000 rows for table:person
 INFO:load_data.py:Loaded page #3:1000 rows for table:person
 INFO:load_data.py:Loaded page #4:1000 rows for table:person
 INFO:load_data.py:Loaded page #5:165 rows for table:person
-DEBUG:load_data.py:Uploading into table: genre_film_work
+INFO:load_data.py:Uploading into table: genre_film_work
 INFO:load_data.py:Loaded page #1:1000 rows for table:genre_film_work
 INFO:load_data.py:Loaded page #2:1000 rows for table:genre_film_work
 INFO:load_data.py:Loaded page #3:230 rows for table:genre_film_work
-DEBUG:load_data.py:Uploading into table: person_film_work
+INFO:load_data.py:Uploading into table: person_film_work
 INFO:load_data.py:Loaded page #1:1000 rows for table:person_film_work
 INFO:load_data.py:Loaded page #2:1000 rows for table:person_film_work
 INFO:load_data.py:Loaded page #3:1000 rows for table:person_film_work

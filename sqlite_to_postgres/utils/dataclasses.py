@@ -53,7 +53,7 @@ class FilmWorkGenre:
     created_at: datetime = field(default_factory=datetime.now)
 
 
-classes_per_table: Dict[str:dataclass] = {
+classes_per_table: Dict[str,dataclass] = {
     'film_work': FilmWork,
     'genre': Genre,
     'person': Person,

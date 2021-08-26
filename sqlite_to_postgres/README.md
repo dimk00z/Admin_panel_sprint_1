@@ -45,7 +45,7 @@ SQLite всё так же живёт со сломанной схемой. Ну�
 ```
 dbname=online_movie_theater_db
 user=postgres
-password=9130
+password=<your_password>
 host=localhost
 port=5432
 db_sqlite_file=db.sqlite

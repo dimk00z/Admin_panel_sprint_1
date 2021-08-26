@@ -5,8 +5,7 @@ from datetime import datetime
 from dateutil import parser
 import uuid
 
-from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre, \
-    classes_per_table
+from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre
 from utils.list_utils import group_elements
 from utils.env_load import load_params
 
@@ -27,9 +26,12 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class SQLiteLoader:
-    def __init__(self, connection: sqlite3.Connection) -> None:
+    def __init__(self, connection: sqlite3.Connection,
+                 classes_per_table: Dict[str, dataclass]) -> None:
         self.cursor: connection.cursor = connection.cursor()
-        self.sqlite_data: dict = {}
+        self.classes_per_table = classes_per_table
+
+        self.sqlite_data: Dict[str, List[str]] = {}
 
     def _get_all_tables_names(self) -> List[str]:
         self.cursor.execute(
@@ -48,9 +50,9 @@ class SQLiteLoader:
                 current_table.append(row)
             self.sqlite_data[table_name] = current_table
 
-    def _get_table_data(self,
-                        table_name: str,
-                        data_class_name: dataclass) -> List[dataclass]:
+    def _sanitize_table_data(self,
+                             table_name: str,
+                             data_class_name: dataclass) -> List[dataclass]:
 
         keys: dict = {key: {'position': position} for
                       position, key in enumerate(self.sqlite_data[table_name][0])}
@@ -81,12 +83,11 @@ class SQLiteLoader:
 
     def _sanitize_data(self) -> Dict[str, List[dataclass]]:
         sanitized_data: Dict[str:] = {}
-        for table_name, data_class_name in classes_per_table.items():
+        for table_name, data_class_name in self.classes_per_table.items():
             logger.debug(f'Loading from table: {table_name}')
-            sanitized_data[table_name] = self._get_table_data(
+            sanitized_data[table_name] = self._sanitize_table_data(
                 table_name=table_name, data_class_name=data_class_name
             )
-
         return sanitized_data
 
     def load_movies(self) -> Dict[str, List[dataclass]]:
@@ -97,8 +98,10 @@ class SQLiteLoader:
 
 
 class PostgresSaver:
-    def __init__(self, pg_conn: _connection, page_size: int):
+    def __init__(self, pg_conn: _connection,
+                 page_size: int):
         self.cursor = pg_conn.cursor()
+
         self.page_size = page_size
 
     def _save_data_to_table(self, table_name: str,
@@ -135,28 +138,17 @@ class PostgresSaver:
                 table_data=table_data)
 
 
-def load_from_sqlite(connection: sqlite3.Connection,
-                     pg_conn: _connection,
-                     page_size: int = 500) -> None:
-    """Основной метод загрузки данных из SQLite в Postgres"""
-    sqlite_loader: SQLiteLoader = SQLiteLoader(connection)
-    data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
-
-    postgres_saver: PostgresSaver = PostgresSaver(pg_conn, page_size)
-    postgres_saver.save_all_data(data)
-
-
 def main():
     try:
         script_params: Dict[str] = load_params(
             required_params=[
-                "dbname",
-                "user",
-                "password",
-                "host",
-                "port",
-                "db_sqlite_file",
-                "page_size",
+                'dbname',
+                'user',
+                'password',
+                'host',
+                'port',
+                'db_sqlite_file',
+                'page_size',
             ])
         logger.debug('Loaded parameters: {}'.format(tuple(script_params.keys())))
         dsl: Dict[str:str] = {
@@ -170,9 +162,24 @@ def main():
         sqlite_file: str = script_params['db_sqlite_file']
         if not os.path.isfile(sqlite_file):
             raise OSError
+
+        classes_per_table: Dict[str, dataclass] = {
+            'film_work': FilmWork,
+            'genre': Genre,
+            'person': Person,
+            'genre_film_work': FilmWorkGenre,
+            'person_film_work': FilmWorkPerson,
+        }
+
         with sqlite3.connect(script_params['db_sqlite_file']) as sqlite_conn:
-            with psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
-                load_from_sqlite(sqlite_conn, pg_conn, int(script_params['page_size']))
+            sqlite_loader: SQLiteLoader = SQLiteLoader(connection=sqlite_conn,
+                                                       classes_per_table=classes_per_table)
+            data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
+
+        with psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
+            postgres_saver: PostgresSaver = PostgresSaver(pg_conn=pg_conn,
+                                                          page_size=int(script_params['page_size']))
+            postgres_saver.save_all_data(data)
 
     except OSError:
         logger.error('Have a problem with sqlite file')

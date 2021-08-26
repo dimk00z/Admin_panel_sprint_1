@@ -51,12 +51,3 @@ class FilmWorkGenre:
     genre_id: uuid.UUID
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     created_at: datetime = field(default_factory=datetime.now)
-
-
-classes_per_table: Dict[str,dataclass] = {
-    'film_work': FilmWork,
-    'genre': Genre,
-    'person': Person,
-    'genre_film_work': FilmWorkGenre,
-    'person_film_work': FilmWorkPerson,
-}

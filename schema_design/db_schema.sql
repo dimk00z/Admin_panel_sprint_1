@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS content.film_work
     description   text,
     creation_date date,
     certificate   text,
-    file_path     character varying(300),
+    file_path     text,
     rating        numeric,
     type          character varying(30)  NOT NULL,
     created_at    timestamp with time zone,

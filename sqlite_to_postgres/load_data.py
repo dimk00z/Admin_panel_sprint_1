@@ -74,7 +74,8 @@ class SQLiteLoader:
                 elif keys[key]['type'] == uuid.UUID:
                     current_record[key] = uuid.UUID(current_record[key])
                 elif keys[key]['type'] == str:
-                    current_record[key] = current_record[key].replace("'", "''")
+                    current_record[key] = current_record[key].replace(
+                        "'", "''")
             current_table_data.append(
                 from_dict(data_class=data_class_name,
                           data=current_record))
@@ -107,10 +108,11 @@ class PostgresSaver:
     def _save_data_to_table(self, table_name: str,
                             table_data: List[dataclass]) -> None:
         logger.info(f'Uploading into table: {table_name}')
-        dataclass_fields: Tuple[str] = tuple(table_data[0].__dataclass_fields__.keys())
+        dataclass_fields: Tuple[str] = tuple(
+            table_data[0].__dataclass_fields__.keys())
         rows_names: str = ', '.join(dataclass_fields)
 
-        grouped_table_data = group_elements(table_data[1:],
+        grouped_table_data = group_elements(table_data,
                                             self.page_size)
         for page_number, rows in enumerate(grouped_table_data):
 
@@ -129,13 +131,14 @@ class PostgresSaver:
                  'ON CONFLICT (id) DO NOTHING;'))
             self.cursor.execute(sql_template)
             rows_count = len(rows)
-            logger.info(f'Loaded page #{page_number + 1}:{rows_count} rows for table:{table_name}')
+            logger.info(
+                f'Loaded page #{page_number + 1}:{rows_count} rows for table:{table_name}')
 
-    def save_all_data(self, data: dict) -> None:
-        for table_name, table_data in data.items():
+    def save_all_data(self, data: dict, tables: List[str]) -> None:
+        for table_name in tables:
             self._save_data_to_table(
                 table_name=table_name,
-                table_data=table_data)
+                table_data=data[table_name])
 
 
 def main():
@@ -150,7 +153,8 @@ def main():
                 'db_sqlite_file',
                 'page_size',
             ])
-        logger.info('Loaded parameters: {}'.format(tuple(script_params.keys())))
+        logger.info('Loaded parameters: {}'.format(
+            tuple(script_params.keys())))
         dsl: Dict[str:str] = {
             'dbname': script_params['dbname'],
             'user': script_params['user'],
@@ -172,14 +176,24 @@ def main():
         }
 
         with sqlite3.connect(script_params['db_sqlite_file']) as sqlite_conn:
-            sqlite_loader: SQLiteLoader = SQLiteLoader(connection=sqlite_conn,
-                                                       classes_per_table=classes_per_table)
+            sqlite_loader: SQLiteLoader = SQLiteLoader(
+                connection=sqlite_conn,
+                classes_per_table=classes_per_table)
             data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
 
+        tables = [
+            'film_work',
+            'genre',
+            'person',
+            'person_film_work',
+            'genre_film_work',
+        ]
+
         with psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
-            postgres_saver: PostgresSaver = PostgresSaver(pg_conn=pg_conn,
-                                                          page_size=int(script_params['page_size']))
-            postgres_saver.save_all_data(data)
+            postgres_saver: PostgresSaver = PostgresSaver(
+                pg_conn=pg_conn,
+                page_size=int(script_params['page_size']))
+            postgres_saver.save_all_data(data=data, tables=tables)
 
     except OSError:
         logger.error('Have a problem with sqlite file')

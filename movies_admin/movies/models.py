@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator
@@ -15,7 +16,7 @@ class FilmworkType(models.TextChoices):
 
 class Genre(TimeStampedMixin, models.Model):
     id = models.UUIDField(
-        primary_key=True)
+        primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(
         _('title'),
         max_length=100)
@@ -24,12 +25,12 @@ class Genre(TimeStampedMixin, models.Model):
 
     class Meta:
         # managed = False
-        db_table = 'content.genre'
+        db_table = 'genre'
 
 
 class FilmWork(TimeStampedMixin, models.Model):
     id = models.UUIDField(
-        primary_key=True)
+        primary_key=True, default=uuid.uuid4, editable=False)
 
     title = models.CharField(
         _('title'), max_length=250)
@@ -39,24 +40,24 @@ class FilmWork(TimeStampedMixin, models.Model):
         _('creation date'), blank=True, null=True)
     certificate = models.TextField(
         _('certificate'), blank=True, null=True)
-    file_path = models.TextField(
+    file_path = models.FileField(
         _('file'), upload_to='film_works/',
         blank=True, null=True)
-    rating = models.DecimalField(
+    rating = models.FloatField(
         _('rating'), validators=[MinValueValidator(0)], blank=True)
     type = models.CharField(
         _('type'), max_length=20,
         choices=FilmworkType.choices)
-    genres = models.ManyToManyField(Genre, through='FilmworkGenre')
+    genres = models.ManyToManyField(Genre, through='GenreFilmWork')
 
     class Meta:
         # managed = False
-        db_table = 'content.film_work'
+        db_table = 'film_work'
 
 
 class GenreFilmWork(models.Model):
     id = models.UUIDField(
-        primary_key=True)
+        primary_key=True, default=uuid.uuid4, editable=False)
     film_work = models.ForeignKey(FilmWork, on_delete=models.CASCADE)
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -68,7 +69,8 @@ class GenreFilmWork(models.Model):
 
 
 class Person(TimeStampedMixin, models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False)
     full_name = models.CharField(
         _('full_name'), max_length=200)
     birth_date = models.DateField(
@@ -76,11 +78,12 @@ class Person(TimeStampedMixin, models.Model):
 
     class Meta:
         # managed = False
-        db_table = 'content.person'
+        db_table = 'person'
 
 
 class PersonFilmWork(models.Model):
-    id = models.UUIDField(primary_key=True)
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False)
     role = models.CharField(
         _('role'), max_length=50, blank=True, null=True)
     film_work = models.ForeignKey(FilmWork, models.DO_NOTHING)
@@ -89,5 +92,5 @@ class PersonFilmWork(models.Model):
 
     class Meta:
         # managed = False
-        db_table = 'content.person_film_work'
+        db_table = 'person_film_work'
         unique_together = (('film_work', 'person_id', 'role'),)

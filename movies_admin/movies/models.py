@@ -4,7 +4,10 @@ from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator
 
 
-class TimeStampedMixin:
+class TimeStampedMixin(models.Model):
+    class Meta:
+        abstract = True
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -20,7 +23,7 @@ class RoleType(models.TextChoices):
     DIRECTOR = 'director', _('director')
 
 
-class Genre(TimeStampedMixin, models.Model):
+class Genre(TimeStampedMixin):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(
@@ -38,7 +41,7 @@ class Genre(TimeStampedMixin, models.Model):
         db_table = '"content"."genre"'
 
 
-class Person(TimeStampedMixin, models.Model):
+class Person(TimeStampedMixin):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False)
     full_name = models.CharField(
@@ -55,7 +58,7 @@ class Person(TimeStampedMixin, models.Model):
         db_table = '"content"."person"'
 
 
-class FilmWork(TimeStampedMixin, models.Model):
+class FilmWork(TimeStampedMixin):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False)
 

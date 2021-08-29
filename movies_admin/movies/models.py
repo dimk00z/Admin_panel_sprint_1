@@ -39,6 +39,7 @@ class Genre(TimeStampedMixin):
         verbose_name = _('Genre')
         verbose_name_plural = _('Genres')
         db_table = '"content"."genre"'
+        ordering = ['name']
 
 
 class Person(TimeStampedMixin):
@@ -56,6 +57,7 @@ class Person(TimeStampedMixin):
         verbose_name = _('Person')
         verbose_name_plural = _('Persons')
         db_table = '"content"."person"'
+        ordering = ['full_name']
 
 
 class FilmWork(TimeStampedMixin):
@@ -88,6 +90,7 @@ class FilmWork(TimeStampedMixin):
         verbose_name = _('Film')
         verbose_name_plural = _('Films')
         db_table = '"content"."film_work"'
+        ordering = ['-rating']
 
 
 class GenreFilmWork(models.Model):
@@ -104,6 +107,7 @@ class GenreFilmWork(models.Model):
         verbose_name = _('Genre')
         verbose_name_plural = _('Genres')
         db_table = '"content"."genre_film_work"'
+        ordering = ['genre__name']
         unique_together = (('film_work', 'genre'))
 
 
@@ -125,3 +129,4 @@ class PersonFilmWork(models.Model):
         verbose_name_plural = _('Connections Film to Person')
         db_table = '"content"."person_film_work"'
         unique_together = (('film_work', 'person_id', 'role'),)
+        ordering = ['role']

@@ -5,12 +5,14 @@ from datetime import datetime
 from dateutil import parser
 import uuid
 
+from dotenv import load_dotenv
+from os import environ
+
 from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre
 from utils.list_utils import group_elements
-from utils.env_load import load_params
 
 from dataclasses import dataclass
-
+from collections import OrderedDict
 from typing import List, Tuple, Dict
 
 import sqlite3
@@ -18,8 +20,6 @@ import sqlite3
 import psycopg2
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
-
-SCHEMA = 'content'
 
 logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.DEBUG)
@@ -100,9 +100,9 @@ class SQLiteLoader:
 
 class PostgresSaver:
     def __init__(self, pg_conn: _connection,
-                 page_size: int):
+                 page_size: int, schema: str = 'content'):
         self.cursor = pg_conn.cursor()
-
+        self.schema = schema
         self.page_size = page_size
 
     def _save_data_to_table(self, table_name: str,
@@ -121,12 +121,13 @@ class PostgresSaver:
                 row: List[str] = []
                 for field_name in dataclass_fields:
                     row.append("'{}'".format(
-                        str(getattr(data_class, field_name))) if getattr(data_class,
-                                                                         field_name) else "NULL")
+                        str(getattr(
+                            data_class, field_name))) if getattr(data_class,
+                                                                 field_name) else "NULL")
                 rows_for_script.append('({})'.format(', '.join(row)))
 
             sql_template: str = '\n'.join(
-                (f"INSERT INTO {SCHEMA}.{table_name} ({rows_names})\nVALUES ",
+                (f"INSERT INTO {self.schema}.{table_name} ({rows_names})\nVALUES ",
                  ', \n'.join(rows_for_script),
                  'ON CONFLICT (id) DO NOTHING;'))
             self.cursor.execute(sql_template)
@@ -134,7 +135,7 @@ class PostgresSaver:
             logger.info(
                 f'Loaded page #{page_number + 1}:{rows_count} rows for table:{table_name}')
 
-    def save_all_data(self, data: dict, tables: List[str]) -> None:
+    def save_all_data(self, data: dict, tables: Tuple[str]) -> None:
         for table_name in tables:
             self._save_data_to_table(
                 table_name=table_name,
@@ -143,57 +144,40 @@ class PostgresSaver:
 
 def main():
     try:
-        script_params: Dict[str] = load_params(
-            required_params=[
-                'dbname',
-                'user',
-                'password',
-                'host',
-                'port',
-                'db_sqlite_file',
-                'page_size',
-            ])
-        logger.info('Loaded parameters: {}'.format(
-            tuple(script_params.keys())))
+        load_dotenv()
         dsl: Dict[str:str] = {
-            'dbname': script_params['dbname'],
-            'user': script_params['user'],
-            'password': script_params['password'],
-            'host': script_params['host'],
-            'port': script_params['port'],
+            'dbname': environ.get('dbname'),
+            'user': environ.get('user'),
+            'password': environ.get('password'),
+            'host': environ.get('host'),
+            'port': environ.get('port'),
             'options': '-c search_path=content'
         }
-        sqlite_file: str = script_params['db_sqlite_file']
+        sqlite_file: str = environ.get('db_sqlite_file')
         if not os.path.isfile(sqlite_file):
             raise OSError
 
-        classes_per_table: Dict[str, dataclass] = {
-            'film_work': FilmWork,
-            'genre': Genre,
-            'person': Person,
-            'genre_film_work': FilmWorkGenre,
-            'person_film_work': FilmWorkPerson,
-        }
+        classes_per_table: OrderedDict = OrderedDict(
+            [('film_work', FilmWork),
+             ('genre', Genre),
+             ('person', Person),
+             ('genre_film_work', FilmWorkGenre),
+             ('person_film_work', FilmWorkPerson)]
+        )
+        tables_names: Tuple[str] = tuple(map(str, classes_per_table.keys()))
 
-        with sqlite3.connect(script_params['db_sqlite_file']) as sqlite_conn:
+        with sqlite3.connect(sqlite_file) as sqlite_conn:
             sqlite_loader: SQLiteLoader = SQLiteLoader(
                 connection=sqlite_conn,
                 classes_per_table=classes_per_table)
-            data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
-
-        tables = [
-            'film_work',
-            'genre',
-            'person',
-            'person_film_work',
-            'genre_film_work',
-        ]
-
+        data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
         with psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
             postgres_saver: PostgresSaver = PostgresSaver(
                 pg_conn=pg_conn,
-                page_size=int(script_params['page_size']))
-            postgres_saver.save_all_data(data=data, tables=tables)
+                page_size=int(environ.get('page_size')),
+                schema=environ.get('schema'))
+        postgres_saver.save_all_data(data=data,
+                                     tables=tables_names)
 
     except OSError:
         logger.error('Have a problem with sqlite file')

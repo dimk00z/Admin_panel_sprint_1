@@ -50,6 +50,7 @@ host=localhost
 port=5432
 db_sqlite_file=db.sqlite
 page_size=1000
+schema=content
 ```
 
 Структура решения:
@@ -60,8 +61,6 @@ page_size=1000
     - описаны dataclass согласно структуры базы данных
 * [utils/list_utils.py](https://github.com/dimk00z/Admin_panel_sprint_1/blob/master/sqlite_to_postgres/utils/list_utils.py)
     - функция группировки списков
-* [utils/env_load.py](https://github.com/dimk00z/Admin_panel_sprint_1/blob/master/sqlite_to_postgres/utils/env_load.py)
-    - загрузка параметров с .env
 
 ## Выполнение
 
@@ -69,7 +68,6 @@ page_size=1000
 
 ```
 python load_data.py
-INFO:load_data.py:Loaded parameters: ('dbname', 'user', 'password', 'host', 'port', 'db_sqlite_file', 'page_size')
 INFO:load_data.py:Loading from table: film_work
 INFO:load_data.py:Loading from table: genre
 INFO:load_data.py:Loading from table: person

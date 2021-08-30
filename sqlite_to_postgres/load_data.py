@@ -17,7 +17,6 @@ from psycopg2.extras import DictCursor, execute_values
 
 from utils.dataclasses import (FilmWork, FilmWorkGenre, FilmWorkPerson, Genre,
                                Person)
-from utils.list_utils import group_elements
 
 logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.DEBUG)
@@ -110,28 +109,23 @@ class PostgresSaver:
             table_data[0].__dataclass_fields__.keys())
         rows_names: str = ', '.join(dataclass_fields)
 
-        grouped_table_data = group_elements(
-            table_data, self.page_size)
-        for page_number, rows in enumerate(grouped_table_data):
+        rows_for_script: List[tuple] = []
+        for entry in table_data:
+            row: List[str, None] = []
+            for field_name in dataclass_fields:
+                row.append(str(getattr(entry, field_name)) if getattr(entry,
+                                                                      field_name) else None)
+            rows_for_script.append(tuple(row))
 
-            rows_for_script: List[tuple] = []
-            for data_class in rows:
-                row: List[str, None] = []
-                for field_name in dataclass_fields:
-                    row.append(str(getattr(data_class, field_name)) if getattr(data_class,
-                                                                               field_name) else None)
-                rows_for_script.append(tuple(row))
-
-            execute_values(
-                cur=self.cursor,
-                sql=f'''INSERT INTO {self.schema}.{table_name} ({rows_names}) 
+        execute_values(
+            cur=self.cursor,
+            sql=f'''INSERT INTO {self.schema}.{table_name} ({rows_names}) 
                 VALUES %s 
                 ON CONFLICT (id) DO NOTHING''',
-                argslist=rows_for_script)
-
-            rows_count = len(rows)
-            logger.info(
-                f'Loaded page #{page_number + 1}:{rows_count} rows for table:{table_name}')
+            argslist=rows_for_script, page_size=self.page_size)
+        table_size = len(table_data)
+        logger.info(
+            f'Loaded page {table_size} rows for table:{table_name}')
 
     def save_all_data(self, data: dict, tables: Tuple[str]) -> None:
         for table_name in tables:

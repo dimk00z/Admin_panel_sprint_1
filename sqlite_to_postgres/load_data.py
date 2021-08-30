@@ -1,25 +1,23 @@
-import os
 import logging
-from dacite import from_dict
-from datetime import datetime
-from dateutil import parser
-import uuid
-
-from dotenv import load_dotenv
-from os import environ
-
-from utils.dataclasses import FilmWork, Person, Genre, FilmWorkPerson, FilmWorkGenre
-from utils.list_utils import group_elements
-
-from dataclasses import dataclass
-from collections import OrderedDict
-from typing import List, Tuple, Dict
-
+import os
 import sqlite3
+import uuid
+from collections import OrderedDict
+from dataclasses import dataclass
+from datetime import datetime
+from os import environ
+from typing import Dict, List, Tuple
 
 import psycopg2
+from dacite import from_dict
+from dateutil import parser
+from dotenv import load_dotenv
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
+
+from utils.dataclasses import (FilmWork, FilmWorkGenre, FilmWorkPerson, Genre,
+                               Person)
+from utils.list_utils import group_elements
 
 logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.DEBUG)

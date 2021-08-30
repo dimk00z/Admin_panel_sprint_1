@@ -1,7 +1,6 @@
+import uuid
 from dataclasses import dataclass, field, fields
 from datetime import datetime
-from typing import Dict
-import uuid
 
 
 @dataclass

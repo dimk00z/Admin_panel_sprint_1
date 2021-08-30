@@ -1,6 +1,9 @@
 import uuid
 from dataclasses import dataclass, field, fields
 from datetime import datetime
+from typing import List, Type, Union
+
+from dateutil import parser
 
 
 @dataclass
@@ -50,3 +53,18 @@ class FilmWorkGenre:
     genre_id: uuid.UUID
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     created_at: datetime = field(default_factory=datetime.now)
+
+
+fields_types: List[Type[
+    Union[str, float, datetime, uuid.UUID]]] = [str, float, datetime, uuid.UUID]
+
+
+def sanitize_field(
+        field_type: fields_types, field_value: str) -> fields_types:
+    dict_type_function = {
+        float: float,
+        uuid.UUID: uuid.UUID,
+        str: lambda x: x.replace("'", "''"),
+        datetime: parser.isoparse
+    }
+    return dict_type_function[field_type](field_value)

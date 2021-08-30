@@ -184,8 +184,8 @@ def main():
                 schema=environ.get('schema'))
             postgres_saver.save_all_data(data=data,
                                          tables=tables_names)
-    except (psycopg2.OperationalError, psycopg2.errors) as e:
-        logger.exception(e)
+    except psycopg2.Error as e:
+        logger.exception(e.pgerror)
 
     finally:
         pg_conn.close()

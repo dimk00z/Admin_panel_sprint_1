@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS content.film_work
     creation_date date,
     certificate   text,
     file_path     text,
-    rating        numeric,
+    rating        float,
     type          character varying(30)  NOT NULL,
     created_at    timestamp with time zone,
     updated_at    timestamp with time zone,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS content.person_film_work
     id uuid,
     role character varying(50),
     film_work_id uuid NOT NULL,
-	person_id uuid NOT NULL,
+    person_id uuid NOT NULL,
     created_at timestamp with time zone,
     PRIMARY KEY (id),
     CONSTRAINT "Filmwork" FOREIGN KEY (film_work_id)
@@ -72,6 +72,5 @@ CREATE TABLE IF NOT EXISTS content.person_film_work
         ON DELETE CASCADE
 );
 
--- Create indexes
-CREATE UNIQUE INDEX film_work_genre ON content.genre_film_work (film_work_id, genre_id);
+-- Create index
 CREATE UNIQUE INDEX film_work_person_role ON content.person_film_work (film_work_id, person_id, role);

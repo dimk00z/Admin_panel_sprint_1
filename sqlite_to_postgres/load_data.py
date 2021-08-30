@@ -168,23 +168,29 @@ def main():
             sqlite_loader: SQLiteLoader = SQLiteLoader(
                 connection=sqlite_conn,
                 classes_per_table=classes_per_table)
-        data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
+            data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
+
         with psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
             postgres_saver: PostgresSaver = PostgresSaver(
                 pg_conn=pg_conn,
                 page_size=int(environ.get('page_size')),
                 schema=environ.get('schema'))
-        postgres_saver.save_all_data(data=data,
-                                     tables=tables_names)
-
+            postgres_saver.save_all_data(data=data,
+                                         tables=tables_names)
     except OSError:
-        logger.error('Have a problem with sqlite file')
+        logger.exception('Have a problem with sqlite file')
 
     except sqlite3.OperationalError as ex:
-        logger.error(ex)
+        logger.exception(ex)
 
     except (psycopg2.OperationalError, psycopg2.errors) as e:
-        logger.error(e)
+        logger.exception(e)
+
+    finally:
+        sqlite_conn.close()
+        pg_conn.close()
+        logger.info('All tasks have worked correctly')
+
 
 
 if __name__ == '__main__':

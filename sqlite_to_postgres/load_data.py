@@ -141,35 +141,42 @@ class PostgresSaver:
 
 
 def main():
+    load_dotenv()
+    dsl: Dict[str:str] = {
+        'dbname': environ.get('dbname'),
+        'user': environ.get('user'),
+        'password': environ.get('password'),
+        'host': environ.get('host'),
+        'port': environ.get('port'),
+        'options': '-c search_path=content'
+    }
+    sqlite_file: str = environ.get('db_sqlite_file')
+
+    classes_per_table: OrderedDict = OrderedDict(
+        [('film_work', FilmWork),
+         ('genre', Genre),
+         ('person', Person),
+         ('genre_film_work', FilmWorkGenre),
+         ('person_film_work', FilmWorkPerson)]
+    )
+    tables_names: Tuple[str] = tuple(map(str, classes_per_table.keys()))
+
     try:
-        load_dotenv()
-        dsl: Dict[str:str] = {
-            'dbname': environ.get('dbname'),
-            'user': environ.get('user'),
-            'password': environ.get('password'),
-            'host': environ.get('host'),
-            'port': environ.get('port'),
-            'options': '-c search_path=content'
-        }
-        sqlite_file: str = environ.get('db_sqlite_file')
         if not os.path.isfile(sqlite_file):
             raise OSError
-
-        classes_per_table: OrderedDict = OrderedDict(
-            [('film_work', FilmWork),
-             ('genre', Genre),
-             ('person', Person),
-             ('genre_film_work', FilmWorkGenre),
-             ('person_film_work', FilmWorkPerson)]
-        )
-        tables_names: Tuple[str] = tuple(map(str, classes_per_table.keys()))
-
         with sqlite3.connect(sqlite_file) as sqlite_conn:
             sqlite_loader: SQLiteLoader = SQLiteLoader(
                 connection=sqlite_conn,
                 classes_per_table=classes_per_table)
             data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
+    except OSError:
+        logger.exception('Have a problem with sqlite file')
+    except sqlite3.OperationalError as ex:
+        logger.exception(ex)
+    finally:
+        sqlite_conn.close()
 
+    try:
         with psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
             postgres_saver: PostgresSaver = PostgresSaver(
                 pg_conn=pg_conn,
@@ -177,20 +184,13 @@ def main():
                 schema=environ.get('schema'))
             postgres_saver.save_all_data(data=data,
                                          tables=tables_names)
-    except OSError:
-        logger.exception('Have a problem with sqlite file')
-
-    except sqlite3.OperationalError as ex:
-        logger.exception(ex)
-
     except (psycopg2.OperationalError, psycopg2.errors) as e:
         logger.exception(e)
 
     finally:
-        sqlite_conn.close()
         pg_conn.close()
-        logger.info('All tasks have worked correctly')
 
+    logger.info('All tasks have worked correctly')
 
 
 if __name__ == '__main__':

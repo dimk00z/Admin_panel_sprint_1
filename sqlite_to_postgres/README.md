@@ -55,12 +55,10 @@ schema=content
 
 Структура решения:
 
-* [load_data.py](https://github.com/dimk00z/Admin_panel_sprint_1/blob/master/sqlite_to_postgres/load_data.py)
-    - основной скрипт для переноса данных
-* [utils/dataclasses.py](https://github.com/dimk00z/Admin_panel_sprint_1/blob/master/sqlite_to_postgres/utils/dataclasses.py)
-    - описаны dataclass согласно структуры базы данных
-* [utils/list_utils.py](https://github.com/dimk00z/Admin_panel_sprint_1/blob/master/sqlite_to_postgres/utils/list_utils.py)
-    - функция группировки списков
+* основной скрипт для переноса
+  данных: [load_data.py](https://github.com/dimk00z/Admin_panel_sprint_1/blob/master/sqlite_to_postgres/load_data.py)
+* описаны dataclass согласно структуре базы
+  данных: [utils/dataclasses.py](https://github.com/dimk00z/Admin_panel_sprint_1/blob/master/sqlite_to_postgres/utils/dataclasses.py)
 
 ## Выполнение
 

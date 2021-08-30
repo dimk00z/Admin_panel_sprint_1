@@ -1,15 +1,17 @@
 import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class TimeStampedMixin(models.Model):
     class Meta:
         abstract = True
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True)
+    updated_at = models.DateTimeField(
+        auto_now=True)
 
 
 class FilmWorkType(models.TextChoices):
@@ -27,8 +29,7 @@ class Genre(TimeStampedMixin):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(
-        _('title'),
-        max_length=100)
+        _('title'), max_length=100)
     description = models.TextField(
         _('description'), blank=True, null=True)
 
@@ -76,12 +77,14 @@ class FilmWork(TimeStampedMixin):
         _('file'), upload_to='film_works/',
         blank=True, null=True)
     rating = models.FloatField(
-        _('rating'), validators=[MinValueValidator(0)], blank=True)
+        _('rating'), validators=[MinValueValidator(0.0), MaxValueValidator(10.0)], blank=True)
     type = models.CharField(
         _('type'), max_length=20,
         choices=FilmWorkType.choices)
-    genres = models.ManyToManyField(Genre, through='GenreFilmWork')
-    persons = models.ManyToManyField(Person, through='PersonFilmWork')
+    genres = models.ManyToManyField(
+        Genre, through='GenreFilmWork')
+    persons = models.ManyToManyField(
+        Person, through='PersonFilmWork')
 
     def __str__(self):
         return self.title
@@ -96,9 +99,12 @@ class FilmWork(TimeStampedMixin):
 class GenreFilmWork(models.Model):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False)
-    film_work = models.ForeignKey(FilmWork, on_delete=models.CASCADE)
-    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    film_work = models.ForeignKey(
+        FilmWork, on_delete=models.CASCADE)
+    genre = models.ForeignKey(
+        Genre, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(
+        auto_now_add=True)
 
     def __str__(self):
         return self.genre.name
@@ -116,10 +122,12 @@ class PersonFilmWork(models.Model):
         primary_key=True, default=uuid.uuid4, editable=False)
     role = models.CharField(
         _('role'), choices=RoleType.choices, max_length=50)
-    film_work = models.ForeignKey(FilmWork,
-                                  on_delete=models.CASCADE)
-    person = models.ForeignKey(Person, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    film_work = models.ForeignKey(
+        FilmWork, on_delete=models.CASCADE)
+    person = models.ForeignKey(
+        Person, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(
+        auto_now_add=True)
 
     def __str__(self):
         return f'{self.person.full_name} - {self.role}'

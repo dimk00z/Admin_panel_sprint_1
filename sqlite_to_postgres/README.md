@@ -1,15 +1,16 @@
 # Техническое задание
 
-Как только вы выполнили новые задания по работе с Postgres, к вам снова прибежал продакт. Он просит перенести уже
-заведённые карточки фильмы в новое хранилище, чтобы контент-менеджеры обновили недостающие описания, когда появится
-админка.
+Как только вы выполнили новые задания по работе с Postgres, к вам снова прибежал продакт. Он просит
+перенести уже заведённые карточки фильмы в новое хранилище, чтобы контент-менеджеры обновили
+недостающие описания, когда появится админка.
 
-Совсем недавно вы спроектировали схему данных для Postgres, с которой гораздо проще работать, но SQLite всё так же живёт
-со сломанной схемой. Нужно аккуратно переложить данные, но при этом ничего не потерять при загрузке. Продакт верит, что
-вы сможете сделать это в ближайшие дни. Что ж, пришло время показать на что вы способны!
+Совсем недавно вы спроектировали схему данных для Postgres, с которой гораздо проще работать, но
+SQLite всё так же живёт со сломанной схемой. Нужно аккуратно переложить данные, но при этом ничего
+не потерять при загрузке. Продакт верит, что вы сможете сделать это в ближайшие дни. Что ж, пришло
+время показать на что вы способны!
 
-На первый взгляд задача выглядит простой: взять данные из одной базы и переложить в другую — даже бизнес-логики в этом
-нет! Но присмотритесь к задаче внимательно, ведь в ней полно важных моментов:
+На первый взгляд задача выглядит простой: взять данные из одной базы и переложить в другую — даже
+бизнес-логики в этом нет! Но присмотритесь к задаче внимательно, ведь в ней полно важных моментов:
 
 1. Нужно сохранить данные в пять разных таблиц в Postgres — `film_work`, `genre`, `person`
    , `film_work_genre`, `film_work_person` — из четырёх таблиц в SQLite — `movies`, `movie_actors`
@@ -18,10 +19,10 @@
 
 > Совет: воспользуйтесь способом, который вы использовали в бесплатной части курса.
 
-3. Нужно написать набор функций для преобразования данных из SQLite в Postgres. Это основная часть приложения, поэтому
-   стройте всю программу от этой части.
-4. В SQLite основная таблица — `movies`. Постарайтесь склеивать остальные таблицы с данными из таблицы movies — это
-   может сильно помочь.
+3. Нужно написать набор функций для преобразования данных из SQLite в Postgres. Это основная часть
+   приложения, поэтому стройте всю программу от этой части.
+4. В SQLite основная таблица — `movies`. Постарайтесь склеивать остальные таблицы с данными из
+   таблицы movies — это может сильно помочь.
 5. `dataclass` поможет быстро понять, где возникает ошибка при работе с данными.
 6. Для генерации `id`в таблицах Postgres лучше всего использовать `uuid.uuid4()`.
 7. Подумайте, как можно сделать загрузку данных пачками, а не целиком.
@@ -67,21 +68,17 @@ schema=content
 
 ```
 python load_data.py
-INFO:load_data.py:Loading from table: film_work
-INFO:load_data.py:Loading from table: genre
-INFO:load_data.py:Loading from table: person
-INFO:load_data.py:Loading from table: genre_film_work
-INFO:load_data.py:Loading from table: person_film_work
-INFO:load_data.py:Data loaded from sqlite db
-INFO:load_data.py:Uploading into table: film_work
-INFO:load_data.py:Loaded 999 rows for table:film_work
-INFO:load_data.py:Uploading into table: genre
-INFO:load_data.py:Loaded 26 rows for table:genre
-INFO:load_data.py:Uploading into table: person
-INFO:load_data.py:Loaded 4166 rows for table:person
-INFO:load_data.py:Uploading into table: genre_film_work
-INFO:load_data.py:Loaded 2231 rows for table:genre_film_work
-INFO:load_data.py:Uploading into table: person_film_work
-INFO:load_data.py:Loaded 5783 rows for table:person_film_work
+INFO:load_data.py:Data loaded from table: film_work, 999 rows
+INFO:load_data.py:Data loaded from table: genre, 26 rows
+INFO:load_data.py:Data loaded from table: person, 4166 rows
+INFO:load_data.py:Data loaded from table: genre_film_work, 2231 rows
+INFO:load_data.py:Data loaded from table: person_film_work, 5783 rows
+INFO:load_data.py:All tables were loaded from sqlite
+INFO:load_data.py:Uploaded 999 rows for table:film_work
+INFO:load_data.py:Uploaded 26 rows for table:genre
+INFO:load_data.py:Uploaded 4166 rows for table:person
+INFO:load_data.py:Uploaded 2231 rows for table:genre_film_work
+INFO:load_data.py:Uploaded 5783 rows for table:person_film_work
 INFO:load_data.py:All tasks have worked correctly
+
 ```

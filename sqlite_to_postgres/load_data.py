@@ -13,7 +13,7 @@ from dacite import from_dict
 from dateutil import parser
 from dotenv import load_dotenv
 from psycopg2.extensions import connection as _connection
-from psycopg2.extras import DictCursor
+from psycopg2.extras import DictCursor, execute_values
 
 from utils.dataclasses import (FilmWork, FilmWorkGenre, FilmWorkPerson, Genre,
                                Person)
@@ -110,25 +110,25 @@ class PostgresSaver:
             table_data[0].__dataclass_fields__.keys())
         rows_names: str = ', '.join(dataclass_fields)
 
-        grouped_table_data = group_elements(table_data,
-                                            self.page_size)
+        grouped_table_data = group_elements(
+            table_data, self.page_size)
         for page_number, rows in enumerate(grouped_table_data):
 
-            rows_for_script: List[str] = []
+            rows_for_script: List[tuple] = []
             for data_class in rows:
-                row: List[str] = []
+                row: List[str, None] = []
                 for field_name in dataclass_fields:
-                    row.append("'{}'".format(
-                        str(getattr(
-                            data_class, field_name))) if getattr(data_class,
-                                                                 field_name) else "NULL")
-                rows_for_script.append('({})'.format(', '.join(row)))
+                    row.append(str(getattr(data_class, field_name)) if getattr(data_class,
+                                                                               field_name) else None)
+                rows_for_script.append(tuple(row))
 
-            sql_template: str = '\n'.join(
-                (f"INSERT INTO {self.schema}.{table_name} ({rows_names})\nVALUES ",
-                 ', \n'.join(rows_for_script),
-                 'ON CONFLICT (id) DO NOTHING;'))
-            self.cursor.execute(sql_template)
+            execute_values(
+                cur=self.cursor,
+                sql=f'''INSERT INTO {self.schema}.{table_name} ({rows_names}) 
+                VALUES %s 
+                ON CONFLICT (id) DO NOTHING''',
+                argslist=rows_for_script)
+
             rows_count = len(rows)
             logger.info(
                 f'Loaded page #{page_number + 1}:{rows_count} rows for table:{table_name}')

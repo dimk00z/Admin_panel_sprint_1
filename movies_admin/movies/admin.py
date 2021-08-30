@@ -1,11 +1,28 @@
 from django.contrib import admin
-from .models import Genre, FilmWork, PersonFilmWork
-# Register your models here.
+from .models import Genre, Person, FilmWork
 
 
-class PersonRoleInline(admin.TabularInline):
-    model = PersonFilmWork
+class PersonInLineAdmin(admin.TabularInline):
+    model = FilmWork.persons.through
     extra = 0
+
+
+class GenreInLineAdmin(admin.TabularInline):
+    model = FilmWork.genres.through
+    extra = 0
+
+
+@admin.register(Genre)
+class GenreAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+
+
+@admin.register(Person)
+class PersonAdmin(admin.ModelAdmin):
+    list_display = ('full_name', 'birth_date')
+    fields = ('full_name', 'birth_date')
+    inlines = (PersonInLineAdmin,)
+    search_fields = ('full_name', 'birth_date')
 
 
 @admin.register(FilmWork)
@@ -16,5 +33,6 @@ class FilmWorkAdmin(admin.ModelAdmin):
         'file_path', 'rating',
     )
     inlines = [
-        PersonRoleInline
+        PersonInLineAdmin, GenreInLineAdmin,
     ]
+    search_fields = ('title', 'description', 'type', 'genres')

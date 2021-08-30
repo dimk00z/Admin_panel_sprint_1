@@ -17,6 +17,7 @@ from psycopg2.extras import DictCursor, execute_values
 
 from utils.dataclasses import (FilmWork, FilmWorkGenre, FilmWorkPerson, Genre,
                                Person)
+from utils.dict_factory import dict_factory
 
 logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.DEBUG)
@@ -24,28 +25,54 @@ logging.basicConfig(level=logging.DEBUG)
 
 class SQLiteLoader:
     def __init__(self, connection: sqlite3.Connection,
-                 classes_per_table: Dict[str, dataclass]) -> None:
+                 classes_per_table: Dict[str, dataclass],
+                 tables_names: Tuple[str]) -> None:
+        connection.row_factory = dict_factory
         self.cursor: connection.cursor = connection.cursor()
         self.classes_per_table = classes_per_table
-
+        self.tables_names = tables_names
         self.sqlite_data: Dict[str, List[str]] = {}
 
-    def _get_all_tables_names(self) -> List[str]:
-        self.cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table';")
-        return [table_name[0] for table_name in self.cursor.fetchall(
-        ) if table_name[0] != 'sqlite_sequence']
+    # def _get_all_tables_names(self) -> List[str]:
+    #     self.cursor.execute(
+    #         "SELECT name FROM sqlite_master WHERE type='table';")
+    #     return [table_name[0] for table_name in self.cursor.fetchall(
+    #     ) if table_name[0] != 'sqlite_sequence']
 
     def _load_all_sqlite_data(self) -> None:
-        for table_name in self._get_all_tables_names():
-            current_table: list = []
+        tables_data: Dict[str:List[dataclass]] = {}
+        for table_name in self.tables_names:
+            current_table: List[dataclass] = []
             self.cursor.execute(f'SELECT * FROM {table_name}')
-            column_names = tuple(map(lambda x: x[0], self.cursor.description))
-            current_table.append(column_names)
-
-            for row in self.cursor.fetchall():
-                current_table.append(row)
-            self.sqlite_data[table_name] = current_table
+            # print(self.classes_per_table[table_name].__annotations__)
+            while True:
+                next_row = self.cursor.fetchone()
+                if next_row:
+                    for field_name, field_type in self.classes_per_table[table_name].__annotations__.items():
+                        if next_row[field_name] is None:
+                            del next_row[field_name]
+                        elif field_type == datetime:
+                            next_row[field_name] = parser.isoparse(next_row[field_name])
+                        elif field_type == float:
+                            next_row[field_name] = float(next_row[field_name])
+                        elif field_type == uuid.UUID:
+                            next_row[field_name] = uuid.UUID(next_row[field_name])
+                        elif field_type == str and next_row[field_name]:
+                            next_row[field_name] = next_row[field_name].replace(
+                                "'", "''")
+                    current_table.append(
+                        from_dict(self.classes_per_table[table_name], next_row)
+                    )
+                else:
+                    break
+                tables_data[table_name] = current_table
+        return tables_data
+        # column_names = tuple(map(lambda x: x[0], self.cursor.description))
+        # current_table.append(column_names)
+        #
+        # for row in self.cursor.fetchall():
+        #     current_table.append(row)
+        # self.sqlite_data[table_name] = current_table
 
     def _sanitize_table_data(self,
                              table_name: str,
@@ -125,7 +152,7 @@ class PostgresSaver:
             argslist=rows_for_script, page_size=self.page_size)
         table_size = len(table_data)
         logger.info(
-            f'Loaded page {table_size} rows for table:{table_name}')
+            f'Loaded {table_size} rows for table:{table_name}')
 
     def save_all_data(self, data: dict, tables: Tuple[str]) -> None:
         for table_name in tables:
@@ -161,7 +188,8 @@ def main():
         with sqlite3.connect(sqlite_file) as sqlite_conn:
             sqlite_loader: SQLiteLoader = SQLiteLoader(
                 connection=sqlite_conn,
-                classes_per_table=classes_per_table)
+                classes_per_table=classes_per_table,
+                tables_names=tables_names)
             data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
     except OSError:
         logger.exception('Have a problem with sqlite file')

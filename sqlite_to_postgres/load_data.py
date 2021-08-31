@@ -132,7 +132,7 @@ def main():
                 connection=sqlite_conn,
                 classes_per_table=classes_per_table,
                 tables_names=tables_names)
-            data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
+            movies_data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
     except sqlite3.OperationalError as ex:
         logger.exception(ex)
     finally:
@@ -144,7 +144,7 @@ def main():
                 pg_conn=pg_conn,
                 page_size=int(environ.get('page_size')),
                 schema=environ.get('schema'))
-            postgres_saver.save_all_data(data=data,
+            postgres_saver.save_all_data(data=movies_data,
                                          tables=tables_names)
     except psycopg2.Error as e:
         logger.exception(e.pgerror)

@@ -30,8 +30,6 @@ class SQLiteLoader:
         self.classes_per_table = classes_per_table
         self.tables_names = tables_names
 
-        self.sqlite_data: Dict[str, List[str]] = {}
-
     def _load_table(self, table_name: str) -> List[dataclass]:
         current_table: List[dataclass] = []
         self.cursor.execute(f'SELECT * FROM {table_name}')
@@ -57,16 +55,12 @@ class SQLiteLoader:
                     'Data loaded from table: {}, {} rows'.format(table_name, len(current_table)))
                 return current_table
 
-    def _load_all_sqlite_data(self) -> Dict[str, List[dataclass]]:
-        tables_data: Dict[str:List[dataclass]] = {}
-        for table_name in self.tables_names:
-            tables_data[table_name] = self._load_table(table_name)
-        return tables_data
-
     def load_movies(self) -> Dict[str, List[dataclass]]:
-        data: Dict[str:List[dataclass]] = self._load_all_sqlite_data()
+        movies_data: Dict[str:List[dataclass]] = {}
+        for table_name in self.tables_names:
+            movies_data[table_name] = self._load_table(table_name)
         logger.info('All tables were loaded from sqlite')
-        return data
+        return movies_data
 
 
 class PostgresSaver:
@@ -129,17 +123,16 @@ def main():
     )
     tables_names: Tuple[str] = tuple(map(str, classes_per_table.keys()))
 
+    if not os.path.isfile(sqlite_file):
+        raise OSError('Have a problem with sqlite file')
+
     try:
-        if not os.path.isfile(sqlite_file):
-            raise OSError
         with sqlite3.connect(sqlite_file) as sqlite_conn:
             sqlite_loader: SQLiteLoader = SQLiteLoader(
                 connection=sqlite_conn,
                 classes_per_table=classes_per_table,
                 tables_names=tables_names)
             data: Dict[str:List[dataclass]] = sqlite_loader.load_movies()
-    except OSError:
-        logger.exception('Have a problem with sqlite file')
     except sqlite3.OperationalError as ex:
         logger.exception(ex)
     finally:

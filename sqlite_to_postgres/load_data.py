@@ -124,7 +124,7 @@ def main():
     tables_names: Tuple[str] = tuple(map(str, classes_per_table.keys()))
 
     if not os.path.isfile(sqlite_file):
-        raise OSError('Have a problem with sqlite file')
+        raise OSError('The sqlite file does not exist')
 
     try:
         with sqlite3.connect(sqlite_file) as sqlite_conn:

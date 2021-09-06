@@ -100,9 +100,14 @@ class GenreFilmWork(models.Model):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False)
     film_work = models.ForeignKey(
-        FilmWork, on_delete=models.CASCADE)
+        FilmWork,
+        db_column="film_work_id",
+        on_delete=models.CASCADE)
     genre = models.ForeignKey(
-        Genre, on_delete=models.CASCADE)
+        Genre,
+        db_column="genre_id",
+        related_name='films',
+        on_delete=models.CASCADE)
     created_at = models.DateTimeField(
         auto_now_add=True)
 
@@ -123,9 +128,14 @@ class PersonFilmWork(models.Model):
     role = models.CharField(
         _('role'), choices=RoleType.choices, max_length=50)
     film_work = models.ForeignKey(
-        FilmWork, on_delete=models.CASCADE)
+        FilmWork,
+        db_column="film_work_id",
+        on_delete=models.CASCADE)
     person = models.ForeignKey(
-        Person, on_delete=models.CASCADE)
+        Person,
+        db_column="person_id",
+        related_name='films',
+        on_delete=models.CASCADE)
     created_at = models.DateTimeField(
         auto_now_add=True)
 
@@ -136,5 +146,5 @@ class PersonFilmWork(models.Model):
         verbose_name = _('Connection Film to Person')
         verbose_name_plural = _('Connections Film to Person')
         db_table = '"content"."person_film_work"'
-        unique_together = (('film_work', 'person_id', 'role'),)
+        unique_together = (('film_work', 'person', 'role'),)
         ordering = ['role']

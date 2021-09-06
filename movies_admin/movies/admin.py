@@ -32,7 +32,9 @@ class FilmWorkAdmin(admin.ModelAdmin):
         'title', 'type', 'description', 'creation_date', 'certificate',
         'file_path', 'rating',
     )
+    filter_horizontal = ['genres']
     inlines = [
-        PersonInLineAdmin, GenreInLineAdmin,
+        PersonInLineAdmin,
+        GenreInLineAdmin,
     ]
     search_fields = ('title', 'description', 'type', 'genres')

@@ -79,7 +79,8 @@ class FilmWork(TimeStampedMixin):
         _('file'), upload_to='film_works/',
         blank=True, null=True)
     rating = models.FloatField(
-        _('rating'), validators=[MinValueValidator(0.0), MaxValueValidator(10.0)], blank=True)
+        _('rating'), validators=[MinValueValidator(0.0), MaxValueValidator(10.0)],
+        blank=True, null=True)
     type = models.CharField(
         _('type'), max_length=20,
         choices=FilmWorkType.choices)

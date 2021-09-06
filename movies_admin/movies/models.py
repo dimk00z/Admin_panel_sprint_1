@@ -83,7 +83,8 @@ class FilmWork(TimeStampedMixin):
         blank=True, null=True)
     type = models.CharField(
         _('type'), max_length=20,
-        choices=FilmWorkType.choices)
+        choices=FilmWorkType.choices,
+        default=FilmWorkType.MOVIE)
     genres = models.ManyToManyField(
         Genre, through='GenreFilmWork')
     persons = models.ManyToManyField(

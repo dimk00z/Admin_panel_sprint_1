@@ -29,7 +29,9 @@ class Genre(TimeStampedMixin):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(
-        _('title'), max_length=100)
+        _('title'),
+        unique=True,
+        max_length=100)
     description = models.TextField(
         _('description'), blank=True, null=True)
 

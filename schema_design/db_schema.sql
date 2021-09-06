@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS content.film_work
 CREATE TABLE IF NOT EXISTS content.genre
 (
     id          uuid,
-    name        character varying(100) NOT NULL,
+    name        character varying(100) NOT NULL UNIQUE,
     description text,
     created_at  timestamp with time zone,
     updated_at  timestamp with time zone,

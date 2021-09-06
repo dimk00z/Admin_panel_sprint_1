@@ -4,7 +4,10 @@ from .base import *
 
 DEBUG = True
 
-INSTALLED_APPS.append('django_extensions')
+INSTALLED_APPS.extend(['django_extensions',
+                      'debug_toolbar', ])
+
+MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
 
 LOGGING = {
     'version': 1,
@@ -34,3 +37,7 @@ LOGGING = {
         }
     },
 }
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
